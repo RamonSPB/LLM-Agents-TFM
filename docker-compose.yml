@@ -13,3 +13,6 @@ services:
     volumes:
       - ollama-data:/root/.ollama
     restart: always
+
+volumes:
+  ollama-data:
