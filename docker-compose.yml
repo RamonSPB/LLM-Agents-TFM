@@ -2,17 +2,32 @@ version: '3.8'
 
 services:
   ollama:
-    image: ollama/ollama
+    image: ollama/ollama:latest
+    container_name: ollama
     ports:
       - "11434:11434"
+    volumes:
+      - ./ollama_data:/root/.ollama
     deploy:
       resources:
         reservations:
           devices:
-            - capabilities: [gpu]
-    volumes:
-      - ollama-data:/root/.ollama
-    restart: always
+            - capabilities: [gpu]         
+    runtime: nvidia                       
+    restart: unless-stopped
 
-volumes:
-  ollama-data:
+  app:
+    build: .
+    container_name: rag_app
+    depends_on:
+      - ollama
+    volumes:
+      - .:/app
+      - ./embeddings_data:/app/embeddings_store
+      - ./chroma_db:/app/chroma_db       
+      - ./simpsons_data:/app/simpsons_data
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+      - CHROMA_DB_PATH=/app/chroma_db
+      - COLLECTION_NAME=simpsons_episodes
+    command: python rag_test.py

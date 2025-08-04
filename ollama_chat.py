@@ -1,12 +1,6 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Mon Jun 30 21:03:57 2025
-
-@author: Admin
-"""
 import requests
 import json
-
 
 def descargar_modelo(nombre_modelo):
     url = "http://localhost:11434/api/pull"
@@ -15,16 +9,18 @@ def descargar_modelo(nombre_modelo):
 
     print(f"\n⬇️ Verificando modelo '{nombre_modelo}'...")
     try:
-        with requests.post(url, headers=headers, json=payload, stream=True, timeout=600) as r:
-            for line in r.iter_lines():
-                if line:
-                    data = json.loads(line)
-                    status = data.get("status", "")
-                    if status == "success":
-                        print(f"✅ Modelo '{nombre_modelo}' ya está disponible.")
-                        break
-                    else:
-                        print(f"📦 {status}")
+        r = requests.post(url, headers=headers, json=payload, timeout=600)
+        if r.ok:
+            # La respuesta tiene varias líneas JSON, tomamos la última válida
+            lineas = r.text.strip().split("\n")
+            ultimo = json.loads(lineas[-1])
+            status = ultimo.get("status", "")
+            if status == "success":
+                print(f"✅ Modelo '{nombre_modelo}' ya está disponible.")
+            else:
+                print(f"📦 Estado final: {status}")
+        else:
+            print(f"❌ Error al descargar el modelo: {r.status_code} {r.text}")
     except requests.exceptions.RequestException as e:
         print(f"❌ Error al descargar el modelo: {e}")
 
@@ -39,16 +35,17 @@ def descargar_embedding(nombre_embedding):
 
     print(f"\n⬇️ Verificando modelo de embeddings '{nombre_embedding}'...")
     try:
-        with requests.post(url, headers=headers, json=payload, stream=True, timeout=600) as r:
-            for line in r.iter_lines():
-                if line:
-                    data = json.loads(line)
-                    status = data.get("status", "")
-                    if status == "success":
-                        print(f"✅ Embedding '{nombre_embedding}' disponible.")
-                        break
-                    else:
-                        print(f"📦 {status}")
+        r = requests.post(url, headers=headers, json=payload, timeout=600)
+        if r.ok:
+            lineas = r.text.strip().split("\n")
+            ultimo = json.loads(lineas[-1])
+            status = ultimo.get("status", "")
+            if status == "success":
+                print(f"✅ Embedding '{nombre_embedding}' disponible.")
+            else:
+                print(f"📦 Estado final: {status}")
+        else:
+            print(f"❌ Error al descargar embedding: {r.status_code} {r.text}")
     except requests.exceptions.RequestException as e:
         print(f"❌ Error al descargar embedding: {e}")
 
@@ -65,18 +62,24 @@ def preguntar_a_ollama(pregunta):
         ]
     }
 
-    respuesta = ""
     try:
         print("🔍 Enviando POST a Ollama...")
-        with requests.post(url, headers=headers, json=payload, stream=True, timeout=30) as r:
-            print("📡 Respuesta recibida. Procesando...")
-            for line in r.iter_lines():
-                if line:                    
-                    data = json.loads(line)
-                    mensaje = data.get("message", {}).get("content", "")
-                    respuesta += mensaje
-        return respuesta
+        r = requests.post(url, headers=headers, json=payload, timeout=120)
+        if r.ok:
+            respuesta = ""
+            lineas = r.text.strip().split("\n")
+            for linea in lineas:
+                try:
+                    data = json.loads(linea)
+                    # Capturar solo los fragmentos de respuesta
+                    if "message" in data and "content" in data["message"]:
+                        respuesta += data["message"]["content"]
+                except json.JSONDecodeError:
+                    pass
 
+            return respuesta.strip() if respuesta else "⚠️ No se recibió contenido del modelo."
+        else:
+            return f"❌ Error {r.status_code}: {r.text}"
     except requests.exceptions.RequestException as e:
         return f"❌ Error de conexión con Ollama: {e}"
 
@@ -91,4 +94,3 @@ if __name__ == "__main__":
         respuesta = preguntar_a_ollama(pregunta)
         print("\n💬 Respuesta:")
         print(respuesta)
-
