@@ -24,3 +24,11 @@ deploy:
 Para apagar el servicio se haría mediante el siguiente comando:
 
 docker compose down
+
+# build_index.py y simpsons_script.py
+
+El archivo simpsons_script.py sirve para generar un dataset al mismo nivel que el proyecto en una carpeta llamada simpsons_data.
+
+El script de build_index.py toma la ruta generada del dataset anterior y genera la base de datos e indexación en ChromaDB.
+
+El efecto de ambos scripts es persistente, se guarda memoria en el docker-compose.yml para tal fin, así la aplicación solo ha de realizarse una vez en el contenedor.
