@@ -7,13 +7,13 @@ services:
     ports:
       - "11434:11434"
     volumes:
-      - ./ollama_data:/root/.ollama
+      - ./ollama_data:/root/.ollama      
     deploy:
       resources:
         reservations:
           devices:
-            - capabilities: [gpu]         
-    runtime: nvidia                       
+            - capabilities: [gpu]
+    runtime: nvidia
     restart: unless-stopped
 
   app:
@@ -23,8 +23,7 @@ services:
       - ollama
     volumes:
       - .:/app
-      - ./embeddings_data:/app/embeddings_store
-      - ./chroma_db:/app/chroma_db       
+      - ./chroma_db:/app/chroma_db      
       - ./simpsons_data:/app/simpsons_data
     environment:
       - OLLAMA_HOST=http://ollama:11434
